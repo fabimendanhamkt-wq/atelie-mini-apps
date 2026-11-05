@@ -1,7 +1,7 @@
 /* Teste de conexão com a chave da própria aluna.
    A chave vai direto do navegador dela para o Google.
    Nada passa por servidor nosso. */
-const MODELO = 'gemini-2.5-flash';
+const MODELO = 'gemini-3.8-flash';
 
 export async function testarChave(chave) {
   const resposta = await fetch(

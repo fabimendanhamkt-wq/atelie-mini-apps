@@ -2,7 +2,7 @@
    A chave vai direto do navegador para o Google. Nada passa por servidor nosso. */
 import { CORES, nomeCorNormalizado } from './cores.js';
 
-const MODELO = 'gemini-2.5-flash';
+const MODELO = 'gemini-3.8-flash';
 
 const ESQUEMA_QUIZ = {
   type: 'OBJECT',

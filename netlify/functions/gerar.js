@@ -1,7 +1,7 @@
 /* Função de servidor: gera o conteúdo com a chave da Fabi (variável GEMINI_API_KEY no Netlify).
    A chave nunca aparece no painel nem no código. Usada só nas gerações de teste da aluna. */
 
-const MODELO = 'gemini-2.5-flash';
+const MODELO = 'gemini-3.8-flash';
 const LIMITE_DIARIO_GLOBAL = Number(process.env.LIMITE_DIARIO || 300);
 
 let contagem = { dia: '', total: 0 }; // zera quando a função "acorda" de novo (limite de segurança extra)
