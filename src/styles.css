@@ -1,0 +1,54 @@
+:root { --fundo:#fbf6ef; --texto:#3b2a1e; --principal:#7a4a2e; --suave:#f1e4d3; --borda:#d9c3a8; --certo:#2f7d4f; --erro:#b03a2e; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--fundo); color: var(--texto); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; }
+.painel { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.cabecalho h1 { margin: 8px 0 0; font-size: 1.7rem; color: var(--principal); }
+.cabecalho p { margin: 4px 0 12px; opacity: .8; }
+.abas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.abas button { border: 0; background: var(--suave); color: var(--texto); padding: 10px 16px; border-radius: 999px; cursor: pointer; font: inherit; }
+.abas button.ativo { background: var(--principal); color: #fff; font-weight: 700; }
+h2 { color: var(--principal); margin: 0 0 12px; }
+h3 { margin-top: 20px; }
+.criar { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 900px) { .criar { grid-template-columns: 1fr 1fr; } .coluna-previa { position: sticky; top: 16px; align-self: start; } }
+.campo { display: grid; gap: 6px; margin-bottom: 14px; }
+.rotulo { font-weight: 700; font-size: .95rem; }
+input[type="text"], input:not([type]), input[type="password"] { font: inherit; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto); width: 100%; }
+.escolha { display: flex; gap: 8px; flex-wrap: wrap; }
+.escolha button { font: inherit; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--principal); background: #fff; cursor: pointer; }
+.escolha button.ativo { background: var(--principal); color: #fff; }
+.item { border: 1px solid var(--borda); border-radius: 12px; padding: 12px; margin: 0 0 12px; display: grid; gap: 8px; background: #fff; }
+.item legend { font-weight: 700; padding: 0 6px; }
+.linha-opcao { display: flex; align-items: center; gap: 8px; }
+.linha-opcao input[type="radio"] { width: 20px; height: 20px; accent-color: var(--principal); }
+button.principal, button.secundario, button.sutil { font: inherit; cursor: pointer; border-radius: 12px; padding: 11px 16px; }
+button.principal { background: var(--principal); color: #fff; border: 0; font-weight: 700; }
+button.secundario { background: #fff; color: var(--principal); border: 2px solid var(--principal); }
+button.sutil { background: none; border: 0; color: var(--principal); text-decoration: underline; padding: 6px 4px; }
+button.perigo { color: var(--erro); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.acoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+.dica { font-size: .9rem; opacity: .8; }
+.aviso { background: #fbe9e5; border: 1px solid #e7b9ae; border-radius: 12px; padding: 12px 16px; margin: 12px 0; }
+.aviso ul { margin: 6px 0 0; padding-left: 20px; }
+.aviso.ok { background: #e5f4ea; border-color: #a9d5b8; }
+.previa-topo { display: flex; justify-content: space-between; align-items: center; }
+.previa { width: 100%; height: 620px; border: 1px solid var(--borda); border-radius: 16px; background: var(--fundo); }
+.barra-backup { display: flex; gap: 10px; flex-wrap: wrap; }
+.lista-apps { list-style: none; padding: 0; display: grid; gap: 12px; }
+.card-app { background: #fff; border: 1px solid var(--borda); border-radius: 14px; padding: 14px 16px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+.card-app p { margin: 2px 0 0; }
+.etiqueta { display: inline-block; margin-left: 8px; background: var(--suave); border-radius: 999px; padding: 2px 10px; font-size: .8rem; }
+.vazio { padding: 24px; text-align: center; background: #fff; border-radius: 14px; border: 1px dashed var(--borda); }
+.passos li { margin-bottom: 8px; }
+code { background: var(--suave); padding: 1px 6px; border-radius: 6px; }
+.marcar { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.rodape { margin-top: 32px; font-size: .85rem; opacity: .7; text-align: center; }
+.marca { margin: 0 0 6px; font-weight: 700; color: var(--principal); }
+
+.gerador { border: 1px solid var(--borda); border-radius: 14px; padding: 14px; margin-bottom: 16px; background: #fff; }
+.gerador h3 { margin: 0 0 4px; }
+.linha-gerador { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+select { font: inherit; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto); width: 100%; }
+.logo { width: 120px; height: auto; display: block; margin-bottom: 4px; }
+textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; background: #fff; color: var(--texto); width: 100%; resize: vertical; }
