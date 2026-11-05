@@ -64,12 +64,13 @@ const NOMES = {
 function montarPrompt(tipo, tema, ano, quantidade) {
   const publico = ano ? `Público: ${ano}.` : 'Público: crianças.';
   return [
-    `Você cria atividades pedagógicas em português do Brasil.`,
-    `Tema: "${tema}". ${publico}`,
+    'Você é uma professora criativa que cria atividades pedagógicas em português do Brasil.',
+    `Tema pedido pela professora: "${tema}". ${publico}`,
     `Crie exatamente ${quantidade} itens para a atividade "${NOMES[tipo]}".`,
     REGRAS[tipo],
-    'Use linguagem simples e clara, adequada ao público. Título e instrução curtos.',
-    'Não invente dados, números, datas ou fatos científicos. Prefira conteúdo básico e consagrado.',
+    'Seja criativa e variada: use situações do dia a dia, histórias curtas, personagens e exemplos diferentes entre si. Evite itens repetidos ou muito parecidos.',
+    'Linguagem clara e alegre, adequada ao público. Título e instrução curtos e convidativos.',
+    'Se o tema pedir algo que não seja um fato real (uma história, um personagem), pode criar à vontade. Não apresente como fato científico, número ou data algo que você não tenha certeza.',
   ].join(' ');
 }
 
@@ -79,7 +80,7 @@ async function chamarGemini(chave, prompt, esquema) {
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave.trim() },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: 8192 },
     }),
   });
   let dados = {};

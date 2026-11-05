@@ -79,12 +79,13 @@ function resposta(status, corpo) {
 function montarPrompt(tipo, tema, ano, quantidade) {
   const publico = ano ? `Público: ${ano}.` : 'Público: crianças.';
   return [
-    'Você cria atividades pedagógicas em português do Brasil.',
-    `Tema: "${tema}". ${publico}`,
+    'Você é uma professora criativa que cria atividades pedagógicas em português do Brasil.',
+    `Tema pedido pela professora: "${tema}". ${publico}`,
     `Crie exatamente ${quantidade} itens para a atividade "${NOMES[tipo]}".`,
     REGRAS[tipo],
-    'Use linguagem simples e clara, adequada ao público. Título e instrução curtos.',
-    'Não invente dados, números, datas ou fatos científicos. Prefira conteúdo básico e consagrado.',
+    'Seja criativa e variada: use situações do dia a dia, histórias curtas, personagens e exemplos diferentes entre si. Evite itens repetidos ou muito parecidos.',
+    'Linguagem clara e alegre, adequada ao público. Título e instrução curtos e convidativos.',
+    'Se o tema pedir algo que não seja um fato real (uma história, um personagem), pode criar à vontade. Não apresente como fato científico, número ou data algo que você não tenha certeza.',
   ].join(' ');
 }
 
@@ -98,7 +99,7 @@ export const handler = async (event) => {
   const tipo = TIPOS_VALIDOS.includes(dados.tipo) ? dados.tipo : null;
   const tema = String(dados.tema || '').trim().slice(0, 120);
   const ano = String(dados.ano || '').slice(0, 40);
-  const quantidade = Math.min(10, Math.max(3, Number(dados.quantidade) || 5));
+  const quantidade = Math.min(15, Math.max(3, Number(dados.quantidade) || 8));
   const resumo = String(dados.resumo || '').trim().slice(0, 300);
   if (!tipo || !tema) return resposta(400, { erro: 'Informe o tipo e o tema.' });
 
@@ -116,7 +117,7 @@ export const handler = async (event) => {
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
     body: JSON.stringify({
       contents: [{ parts: [{ text: texto_prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: 8192 },
     }),
   });
   contagem.total += 1;

@@ -96,7 +96,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
   const [mostrarPrevia, setMostrarPrevia] = useState(true);
   const [tema, setTema] = useState('');
   const [ano, setAno] = useState('');
-  const [quantidade, setQuantidade] = useState(5);
+  const [quantidade, setQuantidade] = useState(8);
   const [gerando, setGerando] = useState(false);
   const [erroIA, setErroIA] = useState('');
   const [msgIA, setMsgIA] = useState('');
@@ -186,10 +186,10 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
         {!editando && (
           <div className="gerador">
             <h3>Gerar com IA</h3>
-            <p className="dica">Digite só o tema. A IA cria os itens no formato do tipo escolhido acima.</p>
+            <p className="dica">Escreva o tema do jeito que quiser. A IA cria os itens no formato do tipo escolhido acima.</p>
             <label className="campo">
               <span className="rotulo">Tema</span>
-              <input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex.: animais da fazenda" />
+              <textarea rows={3} value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex.: animais da fazenda. Pode ser livre: escreva uma frase ou um parágrafo com o que você quer ensinar." />
             </label>
             <div className="linha-gerador">
               <label className="campo">
@@ -207,7 +207,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
               <label className="campo">
                 <span className="rotulo">Quantidade</span>
                 <select value={quantidade} onChange={(e) => setQuantidade(Number(e.target.value))}>
-                  {[3, 4, 5, 6, 7, 8, 9, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+                  {[3, 4, 5, 6, 7, 8, 9, 10, 12, 15].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </label>
             </div>
