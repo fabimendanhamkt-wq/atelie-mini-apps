@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { gerarHtml } from '../lib/gerador.js';
 import { baixarArquivo, nomeArquivo, novoId } from '../lib/armazenamento.js';
 import { CORES, nomeCorNormalizado } from '../lib/cores.js';
-import { gerarConteudo, geracoesTesteRestantes } from '../lib/ia.js';
+import { gerarConteudo, gerarAppLivre, geracoesTesteRestantes } from '../lib/ia.js';
 
 const ITEM_QUIZ = () => ({ pergunta: '', opcoes: ['', '', ''], correta: 0 });
 const ITEM_PAR = () => ({ esquerda: '', direita: '' });
@@ -14,6 +14,11 @@ export function itensIniciais(tipo) {
 /* Confere o que está faltando antes de salvar ou exportar. */
 export function validar(app) {
   const erros = [];
+  if (app.tipo === 'livre') {
+    if (!app.titulo.trim()) erros.push('Dê um título ao aplicativo.');
+    if (!app.html) erros.push('Gere o aplicativo com IA antes de salvar.');
+    return erros;
+  }
   if (!app.titulo.trim()) erros.push('Dê um título ao mini app.');
   const itens = app.itens.filter((it) => !itemVazio(app.tipo, it));
   if (itens.length < 2) erros.push('Crie pelo menos 2 itens preenchidos.');
@@ -66,6 +71,7 @@ export function normalizar(id, tipo, titulo, instrucao, itensBrutos) {
 }
 
 const TIPOS = [
+  { id: 'livre', rotulo: 'App completo (IA cria tudo)' },
   { id: 'quiz', rotulo: 'Quiz' },
   { id: 'relacionar', rotulo: 'Relacionar pares' },
   { id: 'memoria', rotulo: 'Jogo da memória' },
@@ -88,7 +94,7 @@ const ROTULOS_PAR = {
 const NOMES_PAR = { relacionar: 'par', memoria: 'par de cartas', encaixe: 'peça', ordenar: 'frase', rotina: 'passo', colorir: 'número', receita: 'passo' };
 
 export default function Criar({ editando, chave, onSalvar, onCancelar }) {
-  const [tipo, setTipo] = useState(editando?.tipo || 'quiz');
+  const [tipo, setTipo] = useState(editando?.tipo || 'livre');
   const [titulo, setTitulo] = useState(editando?.titulo || '');
   const [instrucao, setInstrucao] = useState(editando?.instrucao || '');
   const [itens, setItens] = useState(editando?.itens || itensIniciais('quiz'));
@@ -100,12 +106,22 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
   const [gerando, setGerando] = useState(false);
   const [erroIA, setErroIA] = useState('');
   const [msgIA, setMsgIA] = useState('');
+  const [htmlLivre, setHtmlLivre] = useState(editando?.html || '');
 
   async function gerarComIA() {
     setErroIA('');
     setMsgIA('');
     setGerando(true);
     try {
+      if (tipo === 'livre') {
+        const app = await gerarAppLivre({ chave, tema, ano });
+        setTitulo(app.titulo);
+        setHtmlLivre(app.html);
+        setAviso([]);
+        const restantes = chave && chave.trim() ? null : geracoesTesteRestantes();
+        setMsgIA('Aplicativo gerado. Veja a prévia e teste antes de salvar: a IA pode errar.' + (restantes !== null ? ` Gerações de teste restantes: ${restantes}.` : ''));
+        return;
+      }
       const r = await gerarConteudo({ chave, tipo, tema, ano, quantidade });
       setTitulo(r.titulo);
       setInstrucao(r.instrucao);
@@ -127,8 +143,13 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
     setItens(itensIniciais(novo));
   }
 
-  const app = useMemo(() => ({ id: editando?.id || novoId(), tipo, titulo, instrucao, itens }), [tipo, titulo, instrucao, itens, editando]);
-  const html = useMemo(() => gerarHtml(normalizar(app.id, tipo, titulo, instrucao, itens)), [app.id, tipo, titulo, instrucao, itens]);
+  const app = useMemo(() => ({ id: editando?.id || novoId(), tipo, titulo, instrucao, itens, html: htmlLivre }), [tipo, titulo, instrucao, itens, editando, htmlLivre]);
+  const html = useMemo(() => {
+    if (tipo === 'livre') {
+      return htmlLivre || '<!doctype html><body style="font-family:system-ui;padding:20px;color:#7a4a2e">Descreva o aplicativo e clique em "Gerar com IA" para ver a prévia aqui.</body>';
+    }
+    return gerarHtml(normalizar(app.id, tipo, titulo, instrucao, itens));
+  }, [app.id, tipo, titulo, instrucao, itens, htmlLivre]);
 
   function atualizarItem(i, campo, valor) {
     setItens((lista) => lista.map((it, k) => (k === i ? { ...it, [campo]: valor } : it)));
@@ -151,6 +172,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
   }
 
   function dadosParaSalvar() {
+    if (tipo === 'livre') return { id: app.id, tipo: 'livre', titulo: titulo.trim(), instrucao: '', itens: [], html: htmlLivre };
     return normalizar(app.id, tipo, titulo, instrucao, itens);
   }
 
@@ -234,7 +256,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
           <input value={instrucao} onChange={(e) => setInstrucao(e.target.value)} placeholder="Ex.: Toque na resposta certa." />
         </label>
 
-        {itens.map((item, i) => (
+        {tipo !== 'livre' && itens.map((item, i) => (
           <fieldset key={i} className="item">
             <legend>{tipo === 'quiz' ? `Pergunta ${i + 1}` : `${NOMES_PAR[tipo]} ${i + 1}`}</legend>
             {tipo === 'quiz' ? (
@@ -257,7 +279,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
             {itens.length > 1 && <button type="button" className="sutil perigo" onClick={() => removerItem(i)}>Remover</button>}
           </fieldset>
         ))}
-        <button type="button" className="secundario" onClick={adicionarItem}>+ adicionar {tipo === 'quiz' ? 'pergunta' : NOMES_PAR[tipo]}</button>
+        {tipo !== 'livre' && <button type="button" className="secundario" onClick={adicionarItem}>+ adicionar {tipo === 'quiz' ? 'pergunta' : NOMES_PAR[tipo]}</button>}
 
         {tipo === 'quiz' && <p className="dica">Marque a bolinha ao lado da opção certa.</p>}
 

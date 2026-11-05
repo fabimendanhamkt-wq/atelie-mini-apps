@@ -6,7 +6,36 @@ const LIMITE_DIARIO_GLOBAL = Number(process.env.LIMITE_DIARIO || 300);
 
 let contagem = { dia: '', total: 0 }; // zera quando a função "acorda" de novo (limite de segurança extra)
 
-const TIPOS_VALIDOS = ['quiz', 'relacionar', 'memoria', 'encaixe', 'ordenar', 'rotina', 'colorir', 'receita', 'vendas'];
+const TIPOS_VALIDOS = ['quiz', 'relacionar', 'memoria', 'encaixe', 'ordenar', 'rotina', 'colorir', 'receita', 'vendas', 'livre'];
+
+const ESQUEMA_LIVRE = {
+  type: 'OBJECT',
+  properties: {
+    titulo: { type: 'STRING' },
+    html: { type: 'STRING' },
+  },
+  required: ['titulo', 'html'],
+};
+
+function promptLivre(tema, ano) {
+  return [
+    'Você é uma desenvolvedora web experiente e uma professora. Crie um APLICATIVO WEB COMPLETO, funcional e bem acabado, em português do Brasil, sobre o pedido abaixo.',
+    `Pedido: "${tema}". ${ano ? 'Público: ' + ano + '.' : 'Público: adultos ou crianças, conforme o pedido.'}`,
+    'Entregue um único arquivo HTML em "html", começando com <!doctype html>, com CSS e JavaScript embutidos. Sem nenhum recurso externo (sem CDN, imagens externas ou fontes externas).',
+    'Siga a ideia e o pensamento de quem pediu, em todos os detalhes que ela descrever. Os itens abaixo são apenas um padrão mínimo de qualidade, não um modelo fixo: adapte ao que foi pedido e não force telas ou funções que não façam sentido para o tema.',
+    'Padrão mínimo de qualidade:',
+    '- Organização clara, com seções ou telas navegáveis quando o tema pedir.',
+    '- Funcionalidade real: cadastro ou entrada de dados, cálculos ou lógica de acordo com o pedido, listas que podem ser adicionadas, editadas e removidas, e totais ou resumos.',
+    '- Validação de campos, mensagens de erro e de sucesso, estados vazios com orientação e botão para reiniciar.',
+    '- Dados salvos em localStorage dentro de try/catch, para o app continuar funcionando se o armazenamento estiver bloqueado.',
+    '- Um botão para exportar ou imprimir o resultado (window.print com CSS de impressão).',
+    '- Acessibilidade e celular: botões grandes, textos legíveis, layout responsivo, contraste bom, e um visual limpo e agradável.',
+    '- Voz e som: um botão 🔊 que lê em voz alta (speechSynthesis, lang pt-BR) os textos principais, e sons simples de sucesso e erro (Web Audio API). Não use alert().',
+    'Conteúdo: adapte o app ao pedido com exemplos reais e úteis. Se o pedido for educativo, use linguagem adequada ao público e atividades que realmente ensinem. Não invente dados científicos, números oficiais ou fatos incertos; em exemplos numéricos ou financeiros, use valores ilustrativos e deixe isso claro no próprio app.',
+    'Antes de responder, revise o código mentalmente: confira que o JavaScript não tem erros de sintaxe e que todos os botões têm uma função.',
+    'Título curto em "titulo".',
+  ].join(' ');
+}
 
 const ESQUEMA_VENDAS = {
   type: 'OBJECT',
@@ -101,6 +130,7 @@ export const handler = async (event) => {
   const ano = String(dados.ano || '').slice(0, 40);
   const quantidade = Math.min(15, Math.max(3, Number(dados.quantidade) || 8));
   const resumo = String(dados.resumo || '').trim().slice(0, 300);
+  const ano_livre = ano;
   if (!tipo || !tema) return resposta(400, { erro: 'Informe o tipo e o tema.' });
 
   const hoje = new Date().toISOString().slice(0, 10);
@@ -110,14 +140,14 @@ export const handler = async (event) => {
     return resposta(429, { erro: 'O teste gratuito atingiu o limite de hoje. Cole sua chave em "Conectar IA" para continuar.' });
   }
 
-  const esquema = tipo === 'vendas' ? ESQUEMA_VENDAS : tipo === 'quiz' ? ESQUEMA_QUIZ : ESQUEMA_PARES;
-  const texto_prompt = tipo === 'vendas' ? promptVendas(tema, resumo || 'material pedagógico') : montarPrompt(tipo, tema, ano, quantidade);
+  const esquema = tipo === 'livre' ? ESQUEMA_LIVRE : tipo === 'vendas' ? ESQUEMA_VENDAS : tipo === 'quiz' ? ESQUEMA_QUIZ : ESQUEMA_PARES;
+  const texto_prompt = tipo === 'livre' ? promptLivre(tema, ano_livre) : tipo === 'vendas' ? promptVendas(tema, resumo || 'material pedagógico') : montarPrompt(tipo, tema, ano, quantidade);
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
     body: JSON.stringify({
       contents: [{ parts: [{ text: texto_prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: 8192 },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: tipo === 'livre' ? 32768 : 8192 },
     }),
   });
   contagem.total += 1;
@@ -125,7 +155,9 @@ export const handler = async (event) => {
   try { corpo = await r.json(); } catch (e) { /* sem JSON */ }
   if (r.status === 429) return resposta(429, { erro: 'Limite de uso atingido. Tente de novo em instantes.' });
   if (!r.ok) return resposta(502, { erro: 'A IA não respondeu. Tente de novo.' });
-  const texto = corpo?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidato = corpo?.candidates?.[0];
+  if (candidato?.finishReason === 'MAX_TOKENS') return resposta(502, { erro: 'O app ficou grande demais para uma só geração. Tente de novo ou peça um tema mais específico.' });
+  const texto = candidato?.content?.parts?.[0]?.text;
   if (!texto) return resposta(502, { erro: 'A IA respondeu sem conteúdo. Tente de novo.' });
   return resposta(200, { conteudo: texto });
 };

@@ -80,7 +80,7 @@ async function chamarGemini(chave, prompt, esquema) {
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave.trim() },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: 8192 },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: esquema === ESQUEMA_LIVRE_CLIENTE ? 32768 : 8192 },
     }),
   });
   let dados = {};
@@ -228,4 +228,65 @@ function conferirVendas(bruto) {
     beneficios: beneficios.join('\n'),
     textoBotao: String(bruto.textoBotao || 'Quero começar agora').trim(),
   };
+}
+
+
+/* App completo: a IA escreve o HTML inteiro a partir do tema livre. */
+const ESQUEMA_LIVRE_CLIENTE = {
+  type: 'OBJECT',
+  properties: { titulo: { type: 'STRING' }, html: { type: 'STRING' } },
+  required: ['titulo', 'html'],
+};
+
+function promptLivreCliente(tema, ano) {
+  return [
+    'Você é uma desenvolvedora web experiente e uma professora. Crie um APLICATIVO WEB COMPLETO, funcional e bem acabado, em português do Brasil, sobre o pedido abaixo.',
+    `Pedido: "${tema}". ${ano ? 'Público: ' + ano + '.' : 'Público: adultos ou crianças, conforme o pedido.'}`,
+    'Entregue um único arquivo HTML em "html", começando com <!doctype html>, com CSS e JavaScript embutidos. Sem nenhum recurso externo (sem CDN, imagens externas ou fontes externas).',
+    'Siga a ideia e o pensamento de quem pediu, em todos os detalhes que ela descrever. Os itens abaixo são apenas um padrão mínimo de qualidade, não um modelo fixo: adapte ao que foi pedido e não force telas ou funções que não façam sentido para o tema.',
+    'Padrão mínimo de qualidade:',
+    '- Organização clara, com seções ou telas navegáveis quando o tema pedir.',
+    '- Funcionalidade real: cadastro ou entrada de dados, cálculos ou lógica de acordo com o pedido, listas que podem ser adicionadas, editadas e removidas, e totais ou resumos.',
+    '- Validação de campos, mensagens de erro e de sucesso, estados vazios com orientação e botão para reiniciar.',
+    '- Dados salvos em localStorage dentro de try/catch, para o app continuar funcionando se o armazenamento estiver bloqueado.',
+    '- Um botão para exportar ou imprimir o resultado (window.print com CSS de impressão).',
+    '- Acessibilidade e celular: botões grandes, textos legíveis, layout responsivo, contraste bom, e um visual limpo e agradável.',
+    '- Voz e som: um botão 🔊 que lê em voz alta (speechSynthesis, lang pt-BR) os textos principais, e sons simples de sucesso e erro (Web Audio API). Não use alert().',
+    'Conteúdo: adapte o app ao pedido com exemplos reais e úteis. Se o pedido for educativo, use linguagem adequada ao público e atividades que realmente ensinem. Não invente dados científicos, números oficiais ou fatos incertos; em exemplos numéricos ou financeiros, use valores ilustrativos e deixe isso claro no próprio app.',
+    'Antes de responder, revise o código mentalmente: confira que o JavaScript não tem erros de sintaxe e que todos os botões têm uma função.',
+    'Título curto em "titulo".',
+  ].join(' ');
+}
+
+function conferirLivre(bruto) {
+  const html = String(bruto?.html || '').trim();
+  if (!/^<!doctype html|^<html/i.test(html) || html.length < 1500) {
+    throw new Error('A IA não gerou o aplicativo completo. Tente de novo, com um tema um pouco mais específico.');
+  }
+  return { titulo: String(bruto.titulo || 'Aplicativo').trim(), html };
+}
+
+export async function gerarAppLivre({ chave, tema, ano }) {
+  if (!tema || !tema.trim()) throw new Error('Digite o tema do aplicativo.');
+  const temaFinal = tema.trim();
+  if (chave && chave.trim()) {
+    const bruto = await chamarGemini(chave, promptLivreCliente(temaFinal, ano), ESQUEMA_LIVRE_CLIENTE);
+    return conferirLivre(bruto);
+  }
+  if (geracoesTesteRestantes() <= 0) {
+    throw new Error('Você usou as ' + LIMITE_TESTE + ' gerações de teste. Cole sua chave em "Conectar IA" para continuar.');
+  }
+  const r = await fetch('/.netlify/functions/gerar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: 'livre', tema: temaFinal, ano }),
+  });
+  let dados = {};
+  try { dados = await r.json(); } catch (e) { /* sem JSON */ }
+  if (!r.ok) throw new Error(dados.erro || 'Não consegui gerar agora. Tente de novo.');
+  let bruto;
+  try { bruto = JSON.parse(dados.conteudo); } catch (e) { throw new Error('A resposta não veio no formato esperado. Tente de novo.'); }
+  const resultado = conferirLivre(bruto);
+  registrarGeracaoTeste();
+  return resultado;
 }

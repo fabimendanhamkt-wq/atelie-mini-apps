@@ -9,6 +9,7 @@ const NOMES_TIPO = { quiz: 'quiz de perguntas', relacionar: 'jogo de relacionar 
 /* Descreve o mini app a partir do conteúdo real dele, para a IA escrever a página. */
 function resumoDoApp(app) {
   if (!app) return 'material pedagógico';
+  if (app.tipo === 'livre') return `aplicativo completo sobre "${app.titulo}"`;
   const exemplos = app.itens.slice(0, 4).map((it) => it.pergunta || it.esquerda).filter(Boolean).join('; ');
   return `${NOMES_TIPO[app.tipo] || 'atividade'} com ${app.itens.length} itens sobre "${app.titulo}". Exemplos do conteúdo: ${exemplos}`;
 }

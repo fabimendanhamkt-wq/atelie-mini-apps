@@ -13,6 +13,7 @@ function escapar(texto) {
 /* Gera o arquivo HTML completo e independente de um mini app.
    Não depende de servidor, de conta ou de internet para funcionar. */
 export function gerarHtml(app) {
+  if (app.tipo === 'livre') return app.html;
   const dados = JSON.stringify(app).replace(/</g, '\\u003c');
   return `<!doctype html>
 <html lang="pt-BR">

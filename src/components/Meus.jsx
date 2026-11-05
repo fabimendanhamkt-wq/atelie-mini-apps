@@ -48,8 +48,8 @@ export default function Meus({ apps, onEditar, onExcluir, onImportar, onPagina }
           <li key={app.id} className="card-app">
             <div>
               <strong>{app.titulo}</strong>
-              <span className="etiqueta">{{ quiz: 'Quiz', relacionar: 'Relacionar', memoria: 'Memória', encaixe: 'Encaixe', ordenar: 'Frase', rotina: 'Rotina', colorir: 'Colorir', receita: 'Receita' }[app.tipo]}</span>
-              <p className="dica">{app.itens.length} {app.tipo === 'quiz' ? 'pergunta(s)' : 'item(ns)'}</p>
+              <span className="etiqueta">{{ quiz: 'Quiz', relacionar: 'Relacionar', memoria: 'Memória', encaixe: 'Encaixe', ordenar: 'Frase', rotina: 'Rotina', colorir: 'Colorir', receita: 'Receita', livre: 'App completo' }[app.tipo]}</span>
+              <p className="dica">{app.tipo === 'livre' ? 'aplicativo completo' : `${app.itens.length} ${app.tipo === 'quiz' ? 'pergunta(s)' : 'item(ns)'}`}</p>
             </div>
             <div className="acoes">
               <button type="button" className="principal" onClick={() => onPagina(app)}>Criar página de vendas</button>
