@@ -1,6 +1,9 @@
 /* Geração de conteúdo com a chave da própria aluna.
    A chave vai direto do navegador para o Google. Nada passa por servidor nosso. */
 import { CORES, nomeCorNormalizado } from './cores.js';
+import { SEM_SERVIDOR } from './modo.js';
+
+const MSG_SEM_CHAVE = 'Cole sua chave em "Conectar IA" para gerar com IA.';
 
 const MODELO = 'gemini-3.8-flash';
 
@@ -153,6 +156,7 @@ export async function gerarConteudo({ chave, tipo, tema, ano, quantidade }) {
     const bruto = await chamarGemini(chave, montarPrompt(tipo, temTema, ano, quantidade), esquema);
     return conferirConteudo(tipo, bruto, quantidade);
   }
+  if (SEM_SERVIDOR) throw new Error(MSG_SEM_CHAVE);
   if (geracoesTesteRestantes() <= 0) {
     throw new Error('Você usou as ' + LIMITE_TESTE + ' gerações de teste. Cole sua chave em "Conectar IA" para continuar gerando.');
   }
@@ -200,6 +204,7 @@ export async function gerarTextosVenda({ chave, produto, resumo }) {
     const bruto = await chamarGemini(chave, promptVendas(produto.trim(), resumoFinal), ESQUEMA_VENDAS_CLIENTE);
     return conferirVendas(bruto);
   }
+  if (SEM_SERVIDOR) throw new Error(MSG_SEM_CHAVE);
   if (geracoesTesteRestantes() <= 0) {
     throw new Error('Você usou as ' + LIMITE_TESTE + ' gerações de teste. Cole sua chave em "Conectar IA" para continuar.');
   }
@@ -283,6 +288,7 @@ export async function gerarAppLivre({ chave, tema, ano, estilo }) {
     const bruto = await chamarGemini(chave, promptLivreCliente(temaFinal, ano, estilo), ESQUEMA_LIVRE_CLIENTE);
     return conferirLivre(bruto);
   }
+  if (SEM_SERVIDOR) throw new Error(MSG_SEM_CHAVE);
   if (geracoesTesteRestantes() <= 0) {
     throw new Error('Você usou as ' + LIMITE_TESTE + ' gerações de teste. Cole sua chave em "Conectar IA" para continuar.');
   }

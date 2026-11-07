@@ -7,6 +7,7 @@ import Publicar from './components/Publicar.jsx';
 import PaginaVendas from './components/PaginaVendas.jsx';
 import { carregarApps, salvarApps, carregarChaveSalva } from './lib/armazenamento.js';
 import { geracoesTesteRestantes } from './lib/ia.js';
+import { SEM_SERVIDOR } from './lib/modo.js';
 
 const MENU = [
   { id: 'inicio', rotulo: 'Dashboard', icone: '🏠' },
@@ -88,7 +89,7 @@ export default function App() {
       <div className="conteudo">
         <header className="barra-topo">
           <h1>{titulo}</h1>
-          <span className={comChave ? 'pilula ok' : 'pilula'}>{comChave ? 'IA conectada com sua chave' : `Teste: ${geracoesTesteRestantes()} geração(ões)`}</span>
+          <span className={comChave ? 'pilula ok' : 'pilula'}>{comChave ? 'IA conectada com sua chave' : SEM_SERVIDOR ? 'Sem IA conectada' : `Teste: ${geracoesTesteRestantes()} geração(ões)`}</span>
         </header>
 
         {aviso && <p className="aviso" role="alert">{aviso}</p>}

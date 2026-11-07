@@ -3,6 +3,7 @@ import { gerarHtml } from '../lib/gerador.js';
 import { baixarArquivo, nomeArquivo, novoId } from '../lib/armazenamento.js';
 import { CORES, nomeCorNormalizado } from '../lib/cores.js';
 import { gerarConteudo, gerarAppLivre, geracoesTesteRestantes } from '../lib/ia.js';
+import { SEM_SERVIDOR } from '../lib/modo.js';
 
 const ITEM_QUIZ = () => ({ pergunta: '', opcoes: ['', '', ''], correta: 0 });
 const ITEM_PAR = () => ({ esquerda: '', direita: '' });
@@ -265,10 +266,13 @@ export default function Criar({ editando, chave, onSalvar, onSalvarEIrPagina, on
             <button type="button" className="principal" onClick={gerarComIA} disabled={gerando || !tema.trim()}>
               {gerando ? 'Gerando…' : 'Gerar com IA'}
             </button>
-            {!(chave && chave.trim()) && (
+            {!(chave && chave.trim()) && !SEM_SERVIDOR && (
               <p className="dica">
                 Você tem {geracoesTesteRestantes()} geração(ões) de teste gratuitas. Para gerar sem limite, cole a sua chave em "Conectar IA".
               </p>
+            )}
+            {!(chave && chave.trim()) && SEM_SERVIDOR && (
+              <p className="dica">Para gerar com IA, cole a sua chave em "Conectar IA". Você também pode criar tudo manualmente.</p>
             )}
             {msgIA && <p className="aviso ok" role="status">{msgIA}</p>}
             {erroIA && <p className="aviso" role="alert">{erroIA}</p>}
