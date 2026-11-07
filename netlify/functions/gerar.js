@@ -2,6 +2,7 @@
    A chave nunca aparece no painel nem no código. Usada só nas gerações de teste da aluna. */
 
 const MODELO = 'gemini-3.8-flash';
+const MODELO_CLAUDE = 'claude-sonnet-5-5';
 const LIMITE_DIARIO_GLOBAL = Number(process.env.LIMITE_DIARIO || 300);
 
 let contagem = { dia: '', total: 0 }; // zera quando a função "acorda" de novo (limite de segurança extra)
@@ -130,7 +131,9 @@ function montarPrompt(tipo, tema, ano, quantidade) {
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') return resposta(405, { erro: 'Use POST.' });
-  const chave = process.env.GEMINI_API_KEY;
+  // PROVEDOR_IA = 'claude' usa a API da Anthropic (ANTHROPIC_API_KEY); padrão é o Gemini (GEMINI_API_KEY).
+  const usarClaude = (process.env.PROVEDOR_IA || '').toLowerCase() === 'claude';
+  const chave = usarClaude ? process.env.ANTHROPIC_API_KEY : process.env.GEMINI_API_KEY;
   if (!chave) return resposta(500, { erro: 'Servidor sem chave configurada.' });
 
   let dados;
@@ -152,12 +155,38 @@ export const handler = async (event) => {
 
   const esquema = tipo === 'livre' ? ESQUEMA_LIVRE : tipo === 'vendas' ? ESQUEMA_VENDAS : tipo === 'quiz' ? ESQUEMA_QUIZ : ESQUEMA_PARES;
   const texto_prompt = tipo === 'livre' ? promptLivre(tema, ano_livre, String(dados.estilo || 'escuro')) : tipo === 'vendas' ? promptVendas(tema, resumo || 'material pedagógico') : montarPrompt(tipo, tema, ano, quantidade);
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
+  const maxSaida = tipo === 'livre' ? 32768 : 8192;
+  let r;
+  let texto;
+  if (usarClaude) {
+    const promptClaude = texto_prompt + ' Responda somente com JSON válido, sem texto antes ou depois e sem cercas de código, seguindo este esquema: ' + JSON.stringify(esquema);
+    r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': chave, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: MODELO_CLAUDE,
+        max_tokens: maxSaida,
+        messages: [{ role: 'user', content: promptClaude }],
+      }),
+    });
+    contagem.total += 1;
+    let corpo = {};
+    try { corpo = await r.json(); } catch (e) { /* sem JSON */ }
+    if (r.status === 429) return resposta(429, { erro: 'Limite de uso atingido. Tente de novo em instantes.' });
+    if (!r.ok) return resposta(502, { erro: 'A IA não respondeu. Tente de novo.' });
+    if (corpo?.stop_reason === 'max_tokens') return resposta(502, { erro: 'O app ficou grande demais para uma só geração. Tente de novo ou peça um tema mais específico.' });
+    texto = (corpo?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+    texto = texto.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    if (!texto) return resposta(502, { erro: 'A IA respondeu sem conteúdo. Tente de novo.' });
+    return resposta(200, { conteudo: texto });
+  }
+
+  r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },
     body: JSON.stringify({
       contents: [{ parts: [{ text: texto_prompt }] }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: tipo === 'livre' ? 32768 : 8192 },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: esquema, maxOutputTokens: maxSaida },
     }),
   });
   contagem.total += 1;
@@ -167,7 +196,7 @@ export const handler = async (event) => {
   if (!r.ok) return resposta(502, { erro: 'A IA não respondeu. Tente de novo.' });
   const candidato = corpo?.candidates?.[0];
   if (candidato?.finishReason === 'MAX_TOKENS') return resposta(502, { erro: 'O app ficou grande demais para uma só geração. Tente de novo ou peça um tema mais específico.' });
-  const texto = candidato?.content?.parts?.[0]?.text;
+  texto = candidato?.content?.parts?.[0]?.text;
   if (!texto) return resposta(502, { erro: 'A IA respondeu sem conteúdo. Tente de novo.' });
   return resposta(200, { conteudo: texto });
 };
