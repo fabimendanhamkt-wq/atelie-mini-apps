@@ -17,15 +17,25 @@ const ESQUEMA_LIVRE = {
   required: ['titulo', 'html'],
 };
 
-function promptLivre(tema, ano) {
+const ESTILOS = {
+  escuro: 'Visual escuro elegante, fundo marrom muito escuro, detalhes em dourado e rosa suave, tipografia clara e bonita.',
+  claro: 'Visual claro e suave, fundo creme, detalhes em marrom e oliva, muito espaço em branco.',
+  colorido: 'Visual colorido e alegre, cores vivas, botões grandes e arredondados, bem adequado para crianças.',
+  minimalista: 'Visual minimalista, muito limpo, poucas cores, foco total na função.',
+};
+
+function promptLivre(tema, ano, estilo) {
   return [
     'Você é uma desenvolvedora web experiente e uma professora. Crie um APLICATIVO WEB COMPLETO, funcional e bem acabado, em português do Brasil, sobre o pedido abaixo.',
     `Pedido: "${tema}". ${ano ? 'Público: ' + ano + '.' : 'Público: adultos ou crianças, conforme o pedido.'}`,
+    `Estilo visual: ${ESTILOS[estilo] || ESTILOS.escuro}`,
     'Entregue um único arquivo HTML em "html", começando com <!doctype html>, com CSS e JavaScript embutidos. Sem nenhum recurso externo (sem CDN, imagens externas ou fontes externas).',
     'Siga a ideia e o pensamento de quem pediu, em todos os detalhes que ela descrever. Os itens abaixo são apenas um padrão mínimo de qualidade, não um modelo fixo: adapte ao que foi pedido e não force telas ou funções que não façam sentido para o tema.',
+    'Quanto mais completo, melhor. Pense antes de escrever: quais telas ou partes o app precisa, quais funções entregam valor de verdade, o que a pessoa vai querer fazer e ver. Depois escreva o app inteiro.',
     'Padrão mínimo de qualidade:',
     '- Organização clara, com seções ou telas navegáveis quando o tema pedir.',
-    '- Funcionalidade real: cadastro ou entrada de dados, cálculos ou lógica de acordo com o pedido, listas que podem ser adicionadas, editadas e removidas, e totais ou resumos.',
+    '- Funcionalidade real e profunda: cadastro ou entrada de dados, cálculos ou lógica de acordo com o pedido, listas que podem ser adicionadas, editadas e removidas, filtros, totais, resumos e, quando fizer sentido, gráficos desenhados com CSS ou SVG.',
+    '- Uma tela inicial que explica em uma frase para que serve o app e leva direto ao primeiro passo.',
     '- Validação de campos, mensagens de erro e de sucesso, estados vazios com orientação e botão para reiniciar.',
     '- Dados salvos em localStorage dentro de try/catch, para o app continuar funcionando se o armazenamento estiver bloqueado.',
     '- Um botão para exportar ou imprimir o resultado (window.print com CSS de impressão).',
@@ -141,7 +151,7 @@ export const handler = async (event) => {
   }
 
   const esquema = tipo === 'livre' ? ESQUEMA_LIVRE : tipo === 'vendas' ? ESQUEMA_VENDAS : tipo === 'quiz' ? ESQUEMA_QUIZ : ESQUEMA_PARES;
-  const texto_prompt = tipo === 'livre' ? promptLivre(tema, ano_livre) : tipo === 'vendas' ? promptVendas(tema, resumo || 'material pedagógico') : montarPrompt(tipo, tema, ano, quantidade);
+  const texto_prompt = tipo === 'livre' ? promptLivre(tema, ano_livre, String(dados.estilo || 'escuro')) : tipo === 'vendas' ? promptVendas(tema, resumo || 'material pedagógico') : montarPrompt(tipo, tema, ano, quantidade);
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': chave },

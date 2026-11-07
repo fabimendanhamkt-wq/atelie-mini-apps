@@ -93,7 +93,7 @@ const ROTULOS_PAR = {
 };
 const NOMES_PAR = { relacionar: 'par', memoria: 'par de cartas', encaixe: 'peça', ordenar: 'frase', rotina: 'passo', colorir: 'número', receita: 'passo' };
 
-export default function Criar({ editando, chave, onSalvar, onCancelar }) {
+export default function Criar({ editando, chave, onSalvar, onSalvarEIrPagina, onCancelar }) {
   const [tipo, setTipo] = useState(editando?.tipo || 'livre');
   const [titulo, setTitulo] = useState(editando?.titulo || '');
   const [instrucao, setInstrucao] = useState(editando?.instrucao || '');
@@ -106,6 +106,9 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
   const [gerando, setGerando] = useState(false);
   const [erroIA, setErroIA] = useState('');
   const [msgIA, setMsgIA] = useState('');
+  const [estilo, setEstilo] = useState('escuro');
+  const [abaLivre, setAbaLivre] = useState('previa');
+  const [copiado, setCopiado] = useState(false);
   const [htmlLivre, setHtmlLivre] = useState(editando?.html || '');
 
   async function gerarComIA() {
@@ -114,7 +117,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
     setGerando(true);
     try {
       if (tipo === 'livre') {
-        const app = await gerarAppLivre({ chave, tema, ano });
+        const app = await gerarAppLivre({ chave, tema, ano, estilo });
         setTitulo(app.titulo);
         setHtmlLivre(app.html);
         setAviso([]);
@@ -176,6 +179,21 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
     return normalizar(app.id, tipo, titulo, instrucao, itens);
   }
 
+  function salvarEIrPagina() {
+    const erros = validar(app);
+    setAviso(erros);
+    if (erros.length) return;
+    onSalvarEIrPagina(dadosParaSalvar());
+  }
+
+  async function copiarCodigo() {
+    try {
+      await navigator.clipboard.writeText(htmlLivre);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1500);
+    } catch (e) { /* sem permissão de área de transferência */ }
+  }
+
   function salvar() {
     const erros = validar(app);
     setAviso(erros);
@@ -208,7 +226,7 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
         {!editando && (
           <div className="gerador">
             <h3>Gerar com IA</h3>
-            <p className="dica">Escreva o tema do jeito que quiser. A IA cria os itens no formato do tipo escolhido acima.</p>
+            <p className="dica">{tipo === 'livre' ? 'Descreva o app do jeito que quiser: o assunto, o público, as funções e como deve funcionar. A IA escreve o app completo.' : 'Escreva o tema do jeito que quiser. A IA cria os itens no formato do tipo escolhido acima.'}</p>
             <label className="campo">
               <span className="rotulo">Tema</span>
               <textarea rows={3} value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex.: animais da fazenda. Pode ser livre: escreva uma frase ou um parágrafo com o que você quer ensinar." />
@@ -226,13 +244,24 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
                   <option value="5º ano">5º ano</option>
                 </select>
               </label>
-              <label className="campo">
+{tipo !== 'livre' &&               <label className="campo">
                 <span className="rotulo">Quantidade</span>
                 <select value={quantidade} onChange={(e) => setQuantidade(Number(e.target.value))}>
                   {[3, 4, 5, 6, 7, 8, 9, 10, 12, 15].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
-              </label>
+              </label>}
             </div>
+            {tipo === 'livre' && (
+              <label className="campo">
+                <span className="rotulo">Estilo visual do app</span>
+                <select value={estilo} onChange={(e) => setEstilo(e.target.value)}>
+                  <option value="escuro">Escuro dourado (elegante)</option>
+                  <option value="claro">Claro e suave (creme)</option>
+                  <option value="colorido">Colorido e infantil</option>
+                  <option value="minimalista">Minimalista e direto</option>
+                </select>
+              </label>
+            )}
             <button type="button" className="principal" onClick={gerarComIA} disabled={gerando || !tema.trim()}>
               {gerando ? 'Gerando…' : 'Gerar com IA'}
             </button>
@@ -297,16 +326,61 @@ export default function Criar({ editando, chave, onSalvar, onCancelar }) {
         </div>
       </div>
 
-      <div className="coluna-previa">
-        <div className="previa-topo">
-          <h3>Prévia</h3>
-          <button type="button" className="sutil" onClick={() => setMostrarPrevia((v) => !v)}>{mostrarPrevia ? 'Ocultar' : 'Mostrar'}</button>
+      {tipo === 'livre' ? (
+        <div className="coluna-previa">
+          <div className="abas-mini" role="tablist">
+            {[['previa', 'Prévia'], ['codigo', 'Código'], ['baixar', 'Baixar'], ['marketing', 'Kit de marketing']].map(([id, rotulo]) => (
+              <button key={id} type="button" role="tab" className={abaLivre === id ? 'ativo' : ''} onClick={() => setAbaLivre(id)}>{rotulo}</button>
+            ))}
+          </div>
+
+          {abaLivre === 'previa' && (
+            <>
+              <iframe title="Prévia do aplicativo" className="previa" srcDoc={html} sandbox="allow-scripts" />
+              <p className="dica">É o mesmo arquivo que você baixa. Teste os botões antes de salvar.</p>
+            </>
+          )}
+
+          {abaLivre === 'codigo' && (
+            <>
+              <textarea className="codigo" rows={22} value={htmlLivre} onChange={(e) => setHtmlLivre(e.target.value)} spellCheck={false} />
+              <p className="dica">Você pode ajustar o código. A prévia atualiza sozinha. Se quebrar, gere de novo.</p>
+            </>
+          )}
+
+          {abaLivre === 'baixar' && (
+            <div className="kit">
+              <h3>Baixar o aplicativo</h3>
+              <p className="dica">Arquivo único (.html). Abra no computador ou no celular, ou publique no Netlify.</p>
+              <div className="acoes">
+                <button type="button" className="principal" onClick={exportar} disabled={!htmlLivre}>Baixar (.html)</button>
+                <button type="button" className="secundario" onClick={copiarCodigo} disabled={!htmlLivre}>{copiado ? 'Copiado!' : 'Copiar código'}</button>
+              </div>
+            </div>
+          )}
+
+          {abaLivre === 'marketing' && (
+            <div className="kit">
+              <h3>Kit de marketing</h3>
+              <p className="dica">Crie a página de vendas deste app. Ela usa o nome e o que o app faz, e você revisa tudo antes de baixar.</p>
+              <div className="acoes">
+                <button type="button" className="principal" onClick={salvarEIrPagina} disabled={!htmlLivre}>Salvar e criar página de vendas</button>
+              </div>
+            </div>
+          )}
         </div>
-        {mostrarPrevia && (
-          <iframe title="Prévia do mini app" className="previa" srcDoc={html} sandbox="allow-scripts" />
-        )}
-        <p className="dica">A prévia é exatamente o arquivo que você baixa. Ouça o botão 🔊 para testar a voz.</p>
-      </div>
+      ) : (
+        <div className="coluna-previa">
+          <div className="previa-topo">
+            <h3>Prévia</h3>
+            <button type="button" className="sutil" onClick={() => setMostrarPrevia((v) => !v)}>{mostrarPrevia ? 'Ocultar' : 'Mostrar'}</button>
+          </div>
+          {mostrarPrevia && (
+            <iframe title="Prévia do mini app" className="previa" srcDoc={html} sandbox="allow-scripts" />
+          )}
+          <p className="dica">A prévia é exatamente o arquivo que você baixa. Ouça o botão 🔊 para testar a voz.</p>
+        </div>
+      )}
     </div>
   );
 }
